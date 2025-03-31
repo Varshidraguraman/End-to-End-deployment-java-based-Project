@@ -1,0 +1,10 @@
+# Ignore Maven build directory
+target/
+
+# Ignore IDE files
+.idea/
+.classpath
+.project
+
+# Ignore macOS Finder files
+.DS_Store
