@@ -1,0 +1,64 @@
+pipeline {
+    agent any
+
+    tools {
+        maven 'MAVEN-TOOLS'  
+    }
+
+    environment {
+        JAVA_HOME = '/usr/lib/jvm/java-17-openjdk'  
+        PATH = "${JAVA_HOME}/bin:${env.PATH}"      
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                // Checkout the project from GitHub
+                git branch: 'master', url: 'https://github.com/Varshid/java-maven-project'
+            }
+        }
+
+        stage('Check Versions') {
+            steps {
+                // Verify Java version and Maven version to ensure the environment is set up properly
+                sh 'java -version'
+                sh 'mvn -v'
+            }
+        }
+
+        stage('Maven Build') {
+            steps {
+                // Navigate to the project directory and build using Maven
+                sh 'cd spring-boot-app && mvn clean package'
+            }
+        }
+
+        stage('SonarQube Analysis') {
+            steps {
+                // Perform SonarQube analysis with the authentication token
+                withCredentials([string(credentialsId: 'sonarqube', variable: 'SONARQUBE_TOKEN')]) {
+                    sh '''
+                        cd spring-boot-app
+                        mvn sonar:sonar -Dsonar.host.url=http://localhost:9000 -Dsonar.login=$SONARQUBE_TOKEN
+                    '''
+                }
+            }
+        }
+
+        stage('Docker Build') {
+            steps {
+                // Build Docker image using the Dockerfile in the project directory
+                sh 'cd spring-boot-app && docker build -t maven:latest .'
+            }
+        }
+    }
+
+    post {
+        success {
+            echo 'Pipeline executed successfully!'
+        }
+        failure {
+            echo 'Pipeline failed.'
+        }
+    }
+}
